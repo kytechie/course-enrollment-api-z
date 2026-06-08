@@ -1,70 +1,38 @@
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException
-)
+from sqlalchemy import Column, Integer, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
 
-from sqlalchemy.orm import Session
-
-from app.database.database import (
-    get_db
-)
-
-from app.schemas.enrollment import (
-    EnrollmentCreate,
-    EnrollmentResponse
-)
-
-from app.services.enrollment_service import (
-    enroll_student,
-    unenroll_student
-)
-
-router = APIRouter(
-    prefix="/enrollments",
-    tags=["Enrollments"]
-)
+from app.database.database import Base
 
 
-@router.post(
-    "/",
-    response_model=EnrollmentResponse
-)
-def enroll(
-    data: EnrollmentCreate,
-    db: Session = Depends(get_db)
-):
-    try:
-        return enroll_student(
-            db,
-            data.user_id,
-            data.course_id
-        )
+class Enrollment(Base):
+    __tablename__ = "enrollments"
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+    id = Column(Integer, primary_key=True, index=True)
 
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
 
-@router.delete(
-    "/{course_id}"
-)
-def unenroll(
-    course_id: int,
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    try:
-        return unenroll_student(
-            db,
-            user_id,
-            course_id
-        )
+    course_id = Column(
+        Integer,
+        ForeignKey("courses.id"),
+        nullable=False
+    )
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    user = relationship(
+        "User",
+        back_populates="enrollments"
+    )
+
+    course = relationship(
+        "Course",
+        back_populates="enrollments"
+    )
